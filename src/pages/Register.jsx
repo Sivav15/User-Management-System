@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import axios from 'axios';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Form, Button, Container, Row, Col } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
+import { message } from 'antd';
+import { register_api } from '../service/api';
+import { LoadingModal, useLoadingModal } from '../hook/useLoadingModal';
 
 const Register = () => {
-    const [message, setMessage] = useState('');
+    const { showLoading, hideLoading, loading } = useLoadingModal();
+    const navigate = useNavigate();
 
     const validationSchema = Yup.object({
         name: Yup.string().required('Name is required'),
@@ -14,7 +18,7 @@ const Register = () => {
         password: Yup.string()
             .min(6, 'Password must be at least 6 characters')
             .required('Password is required'),
-        phone: Yup.string().required('Phone number is required'),
+        phoneNumber: Yup.string().required('Phone number is required'),
         profession: Yup.string().required('Profession is required'),
     });
 
@@ -23,17 +27,33 @@ const Register = () => {
             name: '',
             email: '',
             password: '',
-            phone: '',
+            phoneNumber: '',
             profession: '',
         },
         validationSchema,
         onSubmit: async (values) => {
             try {
-                const res = await axios.post('/api/register', values);
-                setMessage(res.data.msg);
-                formik.resetForm();
-            } catch (err) {
-                setMessage('Error in registration');
+                showLoading();
+
+                const { data } = await axios.post(register_api, values);
+
+                message.success(data.message);
+                navigate('/');
+            } catch (error) {
+                if (error.response) {
+                    const { status, data } = error.response;
+
+                    if (status >= 500) {
+                        message.error(data.message);
+                        return;
+                    }
+                    message.warning(data.message);
+                } else {
+                    console.log(error);
+                    message.error('An unexpected error occurred');
+                }
+            } finally {
+                hideLoading();
             }
         },
     });
@@ -44,9 +64,6 @@ const Register = () => {
                 <Col sm={12} md={8} xl={6} xxl={4}>
                     <Form noValidate onSubmit={formik.handleSubmit} className="p-4 shadow rounded bg-light">
                         <h2 className="text-center mb-4">Sign Up</h2>
-
-                        {message && <Alert variant="info" className="text-center">{message}</Alert>}
-
                         <Form.Group controlId="formName">
                             <Form.Label>Name</Form.Label>
                             <Form.Control
@@ -99,15 +116,15 @@ const Register = () => {
                             <Form.Label>Phone</Form.Label>
                             <Form.Control
                                 type="text"
-                                name="phone"
-                                value={formik.values.phone}
+                                name="phoneNumber"  // Corrected name attribute
+                                value={formik.values.phoneNumber}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
-                                isInvalid={formik.touched.phone && Boolean(formik.errors.phone)}
+                                isInvalid={formik.touched.phoneNumber && Boolean(formik.errors.phoneNumber)}
                                 className="rounded-pill"
                             />
                             <Form.Control.Feedback type="invalid">
-                                {formik.touched.phone && formik.errors.phone}
+                                {formik.touched.phoneNumber && formik.errors.phoneNumber}
                             </Form.Control.Feedback>
                         </Form.Group>
 
@@ -142,6 +159,7 @@ const Register = () => {
                     </Form>
                 </Col>
             </Row>
+            <LoadingModal loading={loading} />
         </Container>
     );
 };

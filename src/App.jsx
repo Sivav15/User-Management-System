@@ -4,6 +4,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import UserManagement from './pages/UserManagement';
+import UserProtectedRoute from './protected route/UserProtectedRoute';
 
 const App = () => {
 
@@ -21,6 +23,14 @@ const App = () => {
     {
       path: "/register",
       element: <Register />,
+    },
+    {
+      path: "/user-management",
+      element:
+        <UserProtectedRoute>
+          <UserManagement />
+        </UserProtectedRoute>
+      ,
     },
   ]);
 

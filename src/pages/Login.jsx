@@ -3,10 +3,18 @@ import axios from 'axios';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { LoadingModal, useLoadingModal } from '../hook/useLoadingModal';
+import { login_api } from '../service/api';
+import { message } from 'antd';
+import { authReducer } from '../features/authSlice';
+import { useDispatch } from 'react-redux';
 
 const Login = () => {
-    const [message, setMessage] = useState('');
+
+    const { showLoading, hideLoading, loading } = useLoadingModal();
+    const navigate = useNavigate();
+    const dispatch = useDispatch()
 
     const validationSchema = Yup.object({
         email: Yup.string().email('Invalid email address').required('Email is required'),
@@ -21,11 +29,31 @@ const Login = () => {
         validationSchema,
         onSubmit: async (values) => {
             try {
-                const res = await axios.post('/api/login', values);
-                setMessage(res.data.msg);
-                formik.resetForm();
-            } catch (err) {
-                setMessage('Error in login');
+                showLoading();
+
+                const { data } = await axios.post(login_api, values);
+
+                message.success(data.message);
+
+                dispatch(authReducer(data));
+
+                navigate('/user-management');
+
+            } catch (error) {
+                if (error.response) {
+                    const { status, data } = error.response;
+
+                    if (status >= 500) {
+                        message.error(data.message);
+                        return;
+                    }
+                    message.warning(data.message);
+                } else {
+                    console.log(error);
+                    message.error('An unexpected error occurred');
+                }
+            } finally {
+                hideLoading();
             }
         },
     });
@@ -37,7 +65,6 @@ const Login = () => {
                     <Form noValidate onSubmit={formik.handleSubmit} className="p-4 shadow rounded bg-light">
                         <h2 className="text-center mb-4">Login</h2>
 
-                        {message && <Alert variant="info" className="text-center">{message}</Alert>}
 
                         <Form.Group controlId="formEmail">
                             <Form.Label>Email address</Form.Label>
@@ -86,6 +113,7 @@ const Login = () => {
                     </Form>
                 </Col>
             </Row>
+            <LoadingModal loading={loading} />
         </Container>
     );
 };
