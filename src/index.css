@@ -2,4 +2,12 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  
+}
+
+body{
+   background-image: url('./assets/authPic.jpg');
+  /* background-color: #18133A; */
+  background-repeat: no-repeat;
+  background-position: inherit;
 }
